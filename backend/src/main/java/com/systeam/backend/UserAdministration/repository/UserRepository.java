@@ -11,4 +11,5 @@ import com.systeam.backend.UserAdministration.model.User;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
+    boolean existsByRoles_Id(Long roleId);
 }

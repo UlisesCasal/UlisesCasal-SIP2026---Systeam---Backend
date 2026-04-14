@@ -30,4 +30,16 @@ public class GlobalExceptionHandler {
             .status(HttpStatus.BAD_REQUEST)
             .body(errors);
     }
+    @ExceptionHandler(ResourceNotFoundException.class)
+public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(Map.of("error", ex.getMessage()));
+}
+
+@ExceptionHandler(ConflictException.class)
+public ResponseEntity<Map<String, String>> handleConflict(ConflictException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(Map.of("error", ex.getMessage()));
+}
+    
 }

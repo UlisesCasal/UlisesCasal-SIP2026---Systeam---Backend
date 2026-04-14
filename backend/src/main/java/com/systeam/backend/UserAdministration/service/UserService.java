@@ -22,83 +22,121 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    //Conexion con tabla de usuario
+    // Conexion con tabla de usuario
     private final UserRepository userRepository;
-    //Conexion con tabla de roles
+    // Conexion con tabla de roles
     private final RoleRepository roleRepository;
-    //Encoder para passwords 
+    // Encoder para passwords
     private final PasswordEncoder passwordEncoder;
 
-    //===========================EVENTOS=============================
-    //EVENTO: Crear un usuario
+    // ===========================EVENTOS=============================
+    // EVENTO: Crear un usuario
     public UserResponse createUser(CreateUserRequest request) {
-        //Validar email único, sino ERROR
+        // Validar email único, sino ERROR
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("El email ya está registrado en IDEAFY");
         }
 
         // Le asignamos el Rol por defecto: INVESTOR
-        //Busco el rol INVESTOR en la tabla de roles, sino ERROR.
+        // Busco el rol INVESTOR en la tabla de roles, sino ERROR.
         Role defaultRole = roleRepository.findByName("INVESTOR")
-            .orElseThrow(() -> new RuntimeException("Rol INVESTOR no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Rol INVESTOR no encontrado"));
 
-        //Armo el usuario con password encoded, y con los datos recibidos y role por defecto INVESTOR
+        // Armo el usuario con password encoded, y con los datos recibidos y role por
+        // defecto INVESTOR
         User user = User.builder()
-            .name(request.getName())
-            .email(request.getEmail())
-            .password(passwordEncoder.encode(request.getPassword()))
-            .enabled(true)
-            .roles(new HashSet<>(Set.of(defaultRole)))
-            .build();
+                .name(request.getName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .enabled(true)
+                .roles(new HashSet<>(Set.of(defaultRole)))
+                .build();
 
-        //Mando a crear el usuario en la tabla de usuarios
+        // Mando a crear el usuario en la tabla de usuarios
         return toResponse(userRepository.save(user));
     }
 
-    //EVENTO: Obtener todos los usuarios
+    // EVENTO: Obtener todos los usuarios
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable).map(this::toResponse);
     }
 
-    //EVENTO: Obtener un usuario por ID
+    // EVENTO: Obtener un usuario por ID
     public UserResponse getUserById(Long id) {
         return toResponse(findUserOrThrow(id));
     }
 
-    //EVENTO: Actualizar un usuario
+    // EVENTO: Obtener usuario por email
+    public UserResponse getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        return toResponse(user);
+    }
+
+    // EVENTO: Actualizar un usuario
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        //Actualiza usuario por ID
+        // Actualiza usuario por ID
         User user = findUserOrThrow(id);
-        user.setName(request.getName());        user.setName(request.getName());
+        user.setName(request.getName());
         user.setEmail(request.getEmail());
         return toResponse(userRepository.save(user));
     }
 
-    //EVENTO: Deshabilitar un usuario
+    // EVENTO: Deshabilitar un usuario
     public void disableUser(Long id) {
         User user = findUserOrThrow(id);
         user.setEnabled(false);
         userRepository.save(user);
     }
 
-    // --- helpers ---
-    //Buscar un usuario por ID, sino ERROR
-    private User findUserOrThrow(Long id) {
-        return userRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    // EVENTO: Cambio de contraseña:
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        //Obtiene el usuario
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        //Comprueba si la contraseña actual es correcta, sino se lo devuelve
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+        //Cambia la contraseña con el encoded
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 
-    //Convertir un usuario a una respuesta para ser leida por el cliente
+    // --- helpers ---
+    // Buscar un usuario por ID, sino ERROR
+    private User findUserOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    }
+
+    // Convertir un usuario a una respuesta para ser leida por el cliente
     private UserResponse toResponse(User user) {
         return UserResponse.builder()
-            .id(user.getId())
-            .name(user.getName())
-            .email(user.getEmail())
-            .enabled(user.getEnabled())
-            .roles(user.getRoles().stream()
-                .map(Role::getName)
-                .collect(Collectors.toSet()))
-            .createdAt(user.getCreatedAt())
-            .build();
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .enabled(user.getEnabled())
+                .roles(user.getRoles().stream()
+                        .map(Role::getName)
+                        .collect(Collectors.toSet()))
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+    //Asignar rol a usuario
+    public UserResponse assignRole(Long userId, Long roleId) {
+        User user = findUserOrThrow(userId);
+        Role role = roleRepository.findById(roleId)
+            .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+
+        user.getRoles().add(role);
+        return toResponse(userRepository.save(user));
+    }
+//Rovar rol de usuario
+    public UserResponse revokeRole(Long userId, Long roleId) {
+        User user = findUserOrThrow(userId);
+        user.getRoles().removeIf(role -> role.getId().equals(roleId));
+        return toResponse(userRepository.save(user));
     }
 }
