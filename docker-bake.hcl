@@ -2,6 +2,18 @@ variable "BUILD_NUMBER" {
   default = "0"
 }
 
+variable "REGISTRY" {
+  default = "docker.io"
+}
+
+variable "IMAGE_NAME" {
+  default = ""
+}
+
+variable "TAG" {
+  default = "latest"
+}
+
 variable "SPRING_DATASOURCE_URL" {
   default = ""
 }
