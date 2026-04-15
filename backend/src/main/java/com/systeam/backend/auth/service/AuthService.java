@@ -18,10 +18,8 @@ import com.systeam.backend.auth.dto.LoginResponse;
 import com.systeam.backend.auth.security.CustomUserDetailsService;
 import com.systeam.backend.auth.security.JwtService;
 
-import lombok.RequiredArgsConstructor;
 //SERVICIO DE AUTENTICACION, contiene los servicios para autenticar y registrar usuarios
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -33,6 +31,15 @@ public class AuthService {
     private final UserRepository userRepository;
     //Servicio para crear usuarios
     private final UserService userService;
+
+    public AuthService(AuthenticationManager authenticationManager, CustomUserDetailsService customUserDetailsService,
+                       JwtService jwtService, UserRepository userRepository, UserService userService) {
+        this.authenticationManager = authenticationManager;
+        this.customUserDetailsService = customUserDetailsService;
+        this.jwtService = jwtService;
+        this.userRepository = userRepository;
+        this.userService = userService;
+    }
 
     //Servicio para autenticar usuarios, recibe una request de login
     public LoginResponse login(LoginRequest request) {

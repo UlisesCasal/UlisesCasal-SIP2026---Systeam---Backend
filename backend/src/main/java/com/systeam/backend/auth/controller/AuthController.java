@@ -14,7 +14,6 @@ import com.systeam.backend.auth.dto.LoginResponse;
 import com.systeam.backend.auth.service.AuthService;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 //ENDPOINT CON EL CUAL SE PUEDE AUTENTICAR Y REGISTRAR USUARIOS
 //POR CADA PETICION QUE RECIBE LO REDIRIGE AL SERVICE DE AUTH.
@@ -22,10 +21,14 @@ import lombok.RequiredArgsConstructor;
 // --------------------
 @RestController
 @RequestMapping("/auth")
-@RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
     private final UserService userService;
+
+    public AuthController(AuthService authService, UserService userService) {
+        this.authService = authService;
+        this.userService = userService;
+    }
 
     @PostMapping("/login")
     public LoginResponse login(@RequestBody @Valid LoginRequest request) {

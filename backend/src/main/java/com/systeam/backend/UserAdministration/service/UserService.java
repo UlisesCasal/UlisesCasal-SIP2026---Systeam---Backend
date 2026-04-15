@@ -17,10 +17,9 @@ import com.systeam.backend.UserAdministration.model.User;
 import com.systeam.backend.UserAdministration.repository.RoleRepository;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
 
-import lombok.RequiredArgsConstructor;
+
 
 @Service
-@RequiredArgsConstructor
 public class UserService {
     // Conexion con tabla de usuario
     private final UserRepository userRepository;
@@ -28,6 +27,12 @@ public class UserService {
     private final RoleRepository roleRepository;
     // Encoder para passwords
     private final PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     // ===========================EVENTOS=============================
     // EVENTO: Crear un usuario
