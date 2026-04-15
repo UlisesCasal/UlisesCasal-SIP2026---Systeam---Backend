@@ -2,7 +2,7 @@ INSERT INTO users (name, email, password, enabled)
 VALUES (
     'Admin IDEAFY',
     'admin@ideafy.local',
-    '$2a$10$7EqJtq98hPqEX7fNZaFWoOHi1M7.6Xj1k2xYDs2fzGEylh4G6dkhW',
+    '$2a$10$N9qo8uLOickgx2ZMRZoMye1J4G3QhqNqZFLhRpMVrB7OLKpRVrXy2',
     TRUE
 )
 ON CONFLICT (email) DO NOTHING;
