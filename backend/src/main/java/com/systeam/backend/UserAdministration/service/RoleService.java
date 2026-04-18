@@ -27,10 +27,11 @@ public class RoleService {
         if (roleRepository.existsByName(request.getName())) {
             throw new RuntimeException("Ya existe un rol con ese nombre");
         }
-        //Se crea el rol
+        //Se crea el rol (se inicializa permissions para evitar null)
         Role role = Role.builder()
             .name(request.getName())
             .description(request.getDescription())
+            .permissions(new java.util.HashSet<>())
             .build();
 
         return toResponse(roleRepository.save(role));
