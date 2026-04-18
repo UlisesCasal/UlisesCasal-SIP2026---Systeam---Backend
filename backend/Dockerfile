@@ -8,23 +8,25 @@ COPY src src
 
 RUN chmod +x mvnw && ./mvnw -q -DskipTests package
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-ARG SPRING_DATASOURCE_URL
-ARG SPRING_DATASOURCE_USERNAME
-ARG SPRING_DATASOURCE_PASSWORD
-ARG APP_SECURITY_JWT_SECRET
-ARG APP_SECURITY_JWT_EXPIRATION_MS
+# Usuario no root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-ENV SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-ENV SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-ENV SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
-ENV APP_SECURITY_JWT_SECRET=${APP_SECURITY_JWT_SECRET}
-ENV APP_SECURITY_JWT_EXPIRATION_MS=${APP_SECURITY_JWT_EXPIRATION_MS}
+# Copiar jar
+COPY --from=builder /app/target/*.jar app.jar
 
-COPY --from=builder /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
+# Permisos
+RUN chown appuser:appgroup /app/app.jar
+USER appuser
+
+# Puerto dinámico Railway
+ENV SERVER_PORT=${PORT}
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD wget -qO- http://localhost:${SERVER_PORT}/actuator/health || exit 1
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
