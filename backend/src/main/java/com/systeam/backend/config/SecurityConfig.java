@@ -43,10 +43,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        configuration.setAllowedOrigins(Arrays.asList(
+        configuration.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:3000",
             "http://localhost:5173",
-            "https://sip-2026-systeam-frontend.vercel.app" 
+            "https://sip-2026-systeam-frontend.vercel.app",
+            "https://*.vercel.app"
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
@@ -76,6 +77,7 @@ public class SecurityConfig {
                 .accessDeniedHandler(accessDeniedHandler)
             )
             .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
                 .anyRequest().authenticated()
             )
