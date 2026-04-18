@@ -20,10 +20,9 @@ COPY --from=builder /app/target/*.jar app.jar
 RUN chown appuser:appgroup /app/app.jar
 USER appuser
 
-ENV SERVER_PORT=${PORT}
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget -qO- http://localhost:${SERVER_PORT}/actuator/health || exit 1
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-Dserver.port=8080", "-jar", "/app/app.jar"]
