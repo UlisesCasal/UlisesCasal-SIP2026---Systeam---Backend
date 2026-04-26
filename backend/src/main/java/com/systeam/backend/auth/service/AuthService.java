@@ -18,6 +18,8 @@ import com.systeam.backend.auth.dto.LoginResponse;
 import com.systeam.backend.auth.security.CustomUserDetailsService;
 import com.systeam.backend.auth.security.JwtService;
 
+import io.jsonwebtoken.security.InvalidKeyException;
+
 //SERVICIO DE AUTENTICACION, contiene los servicios para autenticar y registrar usuarios
 @Service
 public class AuthService {
@@ -42,7 +44,7 @@ public class AuthService {
     }
 
     //Servicio para autenticar usuarios, recibe una request de login
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) throws InvalidKeyException, Exception {
         //Autenticar usuario con email y contraseña contra el Authenticator manager
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())

@@ -9,6 +9,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,23 +42,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         //Obtiene el token del header y el email asociado al token
         String token = authHeader.substring(7);
-        String email = jwtService.extractUsername(token);
+        String email = null;
+        try {
+            email = jwtService.extractUsername(token);
+        } catch (JwtException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         
         //Si el email es diferente de null y el usuario no está autenticado, verifica el token
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
-            if (jwtService.isTokenValid(token, userDetails)) {
-                //Si el token es válido, se crea un UsernamePasswordAuthenticationToken
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities());
-                //Se establece los detalles del usuario en el token
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request));
-                //Se establece el usuario autenticado en el SecurityContextHolder para que se recuerde
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+            try {
+                if (jwtService.isTokenValid(token, userDetails)) {
+                    //Si el token es válido, se crea un UsernamePasswordAuthenticationToken
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities());
+                    //Se establece los detalles del usuario en el token
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request));
+                    //Se establece el usuario autenticado en el SecurityContextHolder para que se recuerde
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            } catch (Exception e) {
+                //Si hay un error, se imprime en consola
+                System.out.println("Error en el filtro de autenticación JWT: " + e.getMessage());
+                e.printStackTrace();
             }
         }
         // Pasar la solicitud y la respuesta al siguiente filtro en la cadena

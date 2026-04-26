@@ -13,6 +13,7 @@ import com.systeam.backend.auth.dto.LoginRequest;
 import com.systeam.backend.auth.dto.LoginResponse;
 import com.systeam.backend.auth.service.AuthService;
 
+import io.jsonwebtoken.security.InvalidKeyException;
 import jakarta.validation.Valid;
 
 //ENDPOINT CON EL CUAL SE PUEDE AUTENTICAR Y REGISTRAR USUARIOS
@@ -31,7 +32,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody @Valid LoginRequest request) {
+    public LoginResponse login(@RequestBody @Valid LoginRequest request) throws InvalidKeyException, Exception {
         return authService.login(request);
     }
 

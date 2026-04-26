@@ -45,9 +45,10 @@ public class CustomUserDetailsService implements UserDetailsService {
             );
         });
         //Retorna UserDetails con el usuario y sus roles y permisos y authorities
+        String password = user.getPassword() != null ? user.getPassword() : "";
         return org.springframework.security.core.userdetails.User
             .withUsername(user.getEmail())
-            .password(user.getPassword())
+            .password(password)
             .authorities(authorities)
             .disabled(!user.getEnabled())
             .build();
