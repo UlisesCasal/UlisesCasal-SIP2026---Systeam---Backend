@@ -3,48 +3,57 @@
 ## Arquitectura del Flujo
 
 ```
-[Frontend] → [Backend] → [Google] → [Backend] → [Frontend con JWT]
+[Frontend] → [Backend /oauth2/authorization/google] → [Google Login] → [Backend callback] → [Frontend /oauth2/callback?token=JWT]
 ```
 
 ---
 
 ## Paso 1: Entender los Endpoints
 
-| Acción | Endpoint Backend | Descripción |
-|--------|------------------|-------------|
-| **Iniciar Login** | `GET /oauth2/authorization/google` | Redirige a Google para autenticación |
-| **Callback de Google** | `GET /login/oauth2/code/google` | Google redirige acá (manejado por backend) |
-| **Retorno al Frontend** | `GET /oauth2/callback?token=xxx` | Backend redirige con el JWT acá |
+| Acción | Endpoint | Descripción |
+|--------|----------|-------------|
+| Iniciar Login | `GET /oauth2/authorization/google` | Backend redirige a Google |
+| Callback de Google | `GET /login/oauth2/code/google` | Manejado automáticamente por el backend |
+| Retorno al Frontend | `GET /oauth2/callback?token=xxx` | Backend redirige acá con el JWT |
 
 ---
 
 ## Paso 2: Configuración de URL de Retorno
 
-El backend está configurado para redirigir al frontend en:
+El backend redirige al frontend a:
 ```
 http://localhost:5173/oauth2/callback
 ```
 
-**Si tu frontend corre en otro puerto** (ej. 3000), avisale al backend dev para cambiar la configuración en `application.properties`:
+Para cambiarla (otro puerto u otro ambiente), setear la variable en el `.env` del backend:
 ```properties
-app.oauth2.redirect-uri=${APP_OAUTH2_REDIRECT_URI:http://localhost:5173/oauth2/callback}
+APP_OAUTH2_REDIRECT_URI=http://localhost:3000/oauth2/callback
 ```
+
+Si no se define, el default es `http://localhost:5173/oauth2/callback`.
 
 ---
 
-## Paso 3: Implementar el Botón "Login con Google"
+## Paso 3: Configuración en Google Cloud Console (requerido)
 
-### Opción A: Redirect Simple (Recomendado para empezar)
+En [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials → tu cliente OAuth2:
 
-```javascript
-// En tu componente de Login
+- **Authorized redirect URIs** debe tener:
+  - Local: `http://localhost:8080/login/oauth2/code/google`
+  - Producción: `https://tu-backend.com/login/oauth2/code/google`
+
+Sin esto, Google rechaza el login con `invalid_client` o `redirect_uri_mismatch`.
+
+---
+
+## Paso 4: Botón "Login con Google"
+
+```jsx
 const handleGoogleLogin = () => {
-  // Redirigir al backend para iniciar flujo OAuth2
   window.location.href = 'http://localhost:8080/oauth2/authorization/google';
 };
-```
 
-```html
+// En el JSX:
 <button onClick={handleGoogleLogin}>
   Iniciar sesión con Google
 </button>
@@ -52,11 +61,9 @@ const handleGoogleLogin = () => {
 
 ---
 
-## Paso 4: Manejar el Callback en el Frontend
+## Paso 5: Página de Callback
 
-Crear una página/componente que escuche en `/oauth2/callback`:
-
-### React Example:
+Crear un componente que escuche en `/oauth2/callback` y capture el token de la URL:
 
 ```jsx
 // src/pages/OAuth2Callback.jsx
@@ -67,170 +74,130 @@ export default function OAuth2Callback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Extraer el token de la URL
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const error = params.get('error');
 
     if (error) {
-      console.error('Error en OAuth2:', error);
       navigate('/login?error=' + error);
       return;
     }
 
     if (!token) {
-      console.error('No se recibió el token');
       navigate('/login?error=no_token');
       return;
     }
 
-    // Guardar el token (localStorage, sessionStorage, o cookies seguras)
+    // Guardar el token
     localStorage.setItem('jwt_token', token);
 
-    // Opcional: Decodificar el payload del JWT para obtener info del usuario
+    // Opcional: decodificar el payload para obtener datos del usuario
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('Usuario:', payload.sub);
-      console.log('Roles:', payload.roles);
-      console.log('Permissions:', payload.permissions);
-      console.log('userId:', payload.userId);
-    } catch (e) {
-      console.warn('No se pudo decodificar el token');
-    }
+      // payload contiene: sub (email), userId, roles, permissions
+    } catch (e) {}
 
-    // Redirigir al dashboard o home
     navigate('/dashboard');
   }, [navigate]);
 
-  return (
-    <div>
-      <p>Procesando autenticación...</p>
-    </div>
-  );
+  return <p>Procesando autenticación...</p>;
 }
 ```
 
-### Configurar la ruta en React Router:
+Registrar la ruta en el router:
 
 ```jsx
 // src/App.jsx
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import OAuth2Callback from './pages/OAuth2Callback';
 
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/oauth2/callback" element={<OAuth2Callback />} />
-        {/* Otras rutas */}
-      </Routes>
-    </BrowserRouter>
-  );
-}
+<Route path="/oauth2/callback" element={<OAuth2Callback />} />
 ```
 
 ---
 
-## Paso 5: Usar el JWT en las Requests
-
-Para hacer requests autenticadas al backend, agregar el token en el header:
+## Paso 6: Usar el JWT en los Requests
 
 ```javascript
-// Función helper para requests autenticadas
 const apiRequest = async (url, options = {}) => {
   const token = localStorage.getItem('jwt_token');
-  
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
+
   const response = await fetch(`http://localhost:8080${url}`, {
     ...options,
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
   });
-  
+
   if (response.status === 401) {
-    // Token expirado o inválido
     localStorage.removeItem('jwt_token');
     window.location.href = '/login';
     return;
   }
-  
+
   return response.json();
 };
-
-// Ejemplo de uso
-const getUserData = async () => {
-  const data = await apiRequest('/api/users/me');
-  return data;
-};
 ```
-
----
-
-## Paso 6: Verificar que el Backend está Corriendo
-
-Asegurate de que el backend esté corriendo en `http://localhost:8080` antes de probar.
 
 ---
 
 ## Paso 7: Probar el Flujo Completo
 
-1. Iniciar el backend: `cd backend && ./mvnw spring-boot:run`
-2. Iniciar el frontend
-3. Hacer click en "Login con Google"
-4. Deberías ser redirigido a Google
-5. Autenticarte con tu cuenta
-6. Volver al frontend en `/oauth2/callback?token=xxx`
-7. El token se guarda y podés usarlo para requests autenticadas ✅
+1. Levantar el backend: `cd backend && ./mvnw spring-boot:run`
+2. Levantar el frontend
+3. Abrir en el navegador: `http://localhost:8080/oauth2/authorization/google`
+   - (o hacer click en el botón del frontend)
+4. Elegir cuenta de Google
+5. El backend genera el JWT y redirige a `http://localhost:5173/oauth2/callback?token=xxx`
+6. El componente `OAuth2Callback` guarda el token y redirige al dashboard
 
 ---
 
-## Checklist para el Frontend Dev
-
-- [ ] Botón "Login con Google" que redirige a `http://localhost:8080/oauth2/authorization/google`
-- [ ] Página que escuche en `/oauth2/callback` para capturar el token
-- [ ] Guardar el JWT en `localStorage`/`sessionStorage`/`httpOnly cookie`
-- [ ] Agregar header `Authorization: Bearer <token>` en las requests
-- [ ] Manejar errores (`?error=token_generation_failed`)
-- [ ] Logout: simplemente borrar el token del storage
-
----
-
-## Estructura de respuesta del JWT
-
-El backend genera un JWT con este payload:
+## Estructura del JWT
 
 ```json
 {
-  "sub": "user@email.com",
-  "userId": 123,
+  "sub": "usuario@gmail.com",
+  "userId": 1,
   "roles": ["INVESTOR"],
   "permissions": ["READ_USER", "CREATE_PROJECT"],
   "iat": 1234567890,
-  "exp": 1234567890
+  "exp": 1234571490
 }
 ```
 
 ---
 
-## Notas para Producción
+## Checklist
 
-Cuando el backend haga deploy, la URL base cambiará de `http://localhost:8080` a la URL de producción. El frontend debería leer la URL base de una variable de entorno:
-
-```javascript
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
-```
-
-Y usar `API_BASE_URL` en lugar de hardcodear la URL.
+- [ ] Botón que redirige a `http://localhost:8080/oauth2/authorization/google`
+- [ ] Ruta `/oauth2/callback` registrada en el router
+- [ ] Componente `OAuth2Callback` que lee `?token=` de la URL y lo guarda
+- [ ] Header `Authorization: Bearer <token>` en todos los requests autenticados
+- [ ] Logout: borrar el token del storage (`localStorage.removeItem('jwt_token')`)
+- [ ] URI `http://localhost:8080/login/oauth2/code/google` registrada en Google Cloud Console
 
 ---
 
-## Contacto
+## Variables de entorno para el Frontend
 
-Si hay algún problema con el backend OAuth2, contactar al backend dev.
+```javascript
+// Usar variable de entorno para no hardcodear la URL del backend
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+```
+
+En `.env` del frontend:
+```
+VITE_API_URL=http://localhost:8080
+```
+
+Para producción, cambiar a la URL del backend deployado.
+
+---
+
+## Notas
+
+- El usuario se crea automáticamente en la BD con rol `INVESTOR` si no existe.
+- Si el usuario ya existe con ese email (creado por registro manual), el backend vincula el provider OAuth2 a esa cuenta.
+- El token expira en 1 hora (configurable con `APP_SECURITY_JWT_EXPIRATION_MS` en el `.env` del backend).

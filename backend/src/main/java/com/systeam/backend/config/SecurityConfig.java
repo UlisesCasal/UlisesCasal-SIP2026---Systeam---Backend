@@ -78,7 +78,7 @@ public class SecurityConfig {
         return http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(Customizer.withDefaults())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint(authenticationEntryPoint)
                 .accessDeniedHandler(accessDeniedHandler)
@@ -86,7 +86,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
-                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                .requestMatchers("/oauth2/**", "/login/oauth2/**", "/login/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
