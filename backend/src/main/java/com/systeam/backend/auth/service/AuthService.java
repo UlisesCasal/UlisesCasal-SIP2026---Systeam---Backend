@@ -15,8 +15,10 @@ import com.systeam.backend.UserAdministration.repository.UserRepository;
 import com.systeam.backend.UserAdministration.service.UserService;
 import com.systeam.backend.auth.dto.LoginRequest;
 import com.systeam.backend.auth.dto.LoginResponse;
+import com.systeam.backend.auth.model.RefreshToken;
 import com.systeam.backend.auth.security.CustomUserDetailsService;
 import com.systeam.backend.auth.security.JwtService;
+import com.systeam.backend.auth.service.RefreshTokenService;
 
 import io.jsonwebtoken.security.InvalidKeyException;
 
@@ -33,18 +35,24 @@ public class AuthService {
     private final UserRepository userRepository;
     //Servicio para crear usuarios
     private final UserService userService;
+    //Servicio para refrescar tokens de usuarios
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(AuthenticationManager authenticationManager, CustomUserDetailsService customUserDetailsService,
-                       JwtService jwtService, UserRepository userRepository, UserService userService) {
+                       JwtService jwtService, 
+                       UserRepository userRepository, 
+                       UserService userService,
+                       RefreshTokenService refreshTokenService) {
         this.authenticationManager = authenticationManager;
         this.customUserDetailsService = customUserDetailsService;
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.userService = userService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     //Servicio para autenticar usuarios, recibe una request de login
-    public LoginResponse login(LoginRequest request) throws InvalidKeyException, Exception {
+    public LoginResponse login(LoginRequest request) throws Exception {
         //Autenticar usuario con email y contraseña contra el Authenticator manager
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -63,17 +71,22 @@ public class AuthService {
             .flatMap(role -> role.getPermissions().stream())
             .map(permission -> permission.getName())
             .collect(Collectors.toSet());
-        // --------------------
-        //Genero el token Jwt con los detalles del usuario y los roles y permisos
-        String token = jwtService.generateToken(userDetails, Map.of(
+
+        //Genero el access token JWT
+        String accessToken = jwtService.generateToken(userDetails, Map.of(
             "userId", user.getId(),
             "roles", roles,
             "permissions", permissions
         ));
-        // --------------------
-        //Devuelvo la respuesta de login con el token y los detalles del usuario
+
+        //Genero el refresh token (BD + JWT)
+        RefreshToken refreshTokenEntity = refreshTokenService.createRefreshToken(user);
+        String refreshTokenJwt = jwtService.generateRefreshToken(userDetails, refreshTokenEntity.getTokenId());
+
+        //Devuelvo la respuesta de login con ambos tokens
         return LoginResponse.builder()
-            .accessToken(token)
+            .accessToken(accessToken)
+            .refreshToken(refreshTokenJwt)
             .tokenType("Bearer")
             .expiresIn(jwtService.getExpirationMs())
             .userId(user.getId())

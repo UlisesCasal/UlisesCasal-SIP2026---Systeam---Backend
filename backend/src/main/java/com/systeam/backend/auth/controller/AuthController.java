@@ -11,7 +11,9 @@ import com.systeam.backend.UserAdministration.service.UserService;
 import com.systeam.backend.auth.dto.ChangePasswordRequest;
 import com.systeam.backend.auth.dto.LoginRequest;
 import com.systeam.backend.auth.dto.LoginResponse;
+import com.systeam.backend.auth.dto.RefreshRequest;
 import com.systeam.backend.auth.service.AuthService;
+import com.systeam.backend.auth.service.RefreshTokenService;
 
 import io.jsonwebtoken.security.InvalidKeyException;
 import jakarta.validation.Valid;
@@ -25,10 +27,13 @@ import jakarta.validation.Valid;
 public class AuthController {
     private final AuthService authService;
     private final UserService userService;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthController(AuthService authService, UserService userService) {
+    public AuthController(AuthService authService, UserService userService,
+                          RefreshTokenService refreshTokenService) {
         this.authService = authService;
         this.userService = userService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping("/login")
@@ -50,5 +55,11 @@ public class AuthController {
                 principal.getName(),
                 request.getCurrentPassword(),
                 request.getNewPassword());
+    }
+
+    // ENDPOINT PARA REFRESCAR TOKENS
+    @PostMapping("/refresh")
+    public LoginResponse refreshToken(@RequestBody @Valid RefreshRequest request) throws Exception {
+        return refreshTokenService.refreshTokenPair(request.getRefreshToken());
     }
 }

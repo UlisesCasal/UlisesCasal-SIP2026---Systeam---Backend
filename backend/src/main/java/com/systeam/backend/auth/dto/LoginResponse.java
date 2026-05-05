@@ -8,10 +8,11 @@ import lombok.Data;
 @Builder
 public class LoginResponse{
     private String accessToken;
+    private String refreshToken;
     private String tokenType;
     private Long expiresIn;
     private Long userId;
     private String email;
     private Set<String> roles;
-    private Set<String> permissions; 
+    private Set<String> permissions;
 }

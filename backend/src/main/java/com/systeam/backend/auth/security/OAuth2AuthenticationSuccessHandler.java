@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 
 import com.systeam.backend.UserAdministration.model.User;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
+import com.systeam.backend.auth.model.RefreshToken;
+import com.systeam.backend.auth.service.RefreshTokenService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,13 +29,14 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final CustomUserDetailsService customUserDetailsService;
+    private final RefreshTokenService refreshTokenService;
 
     @Value("${app.oauth2.redirect-uri}")
     private String redirectUri;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException {
+                                          Authentication authentication) throws IOException {
         OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
         String email = oauth2User.getAttribute("email");
 
@@ -51,18 +54,22 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             .map(p -> p.getName())
             .collect(Collectors.toSet());
 
-        String token;
         try {
-            token = jwtService.generateToken(userDetails, Map.of(
+            // Generar access token
+            String accessToken = jwtService.generateToken(userDetails, Map.of(
                 "userId", user.getId(),
                 "roles", roles,
                 "permissions", permissions
             ));
+
+            // Generar refresh token
+            RefreshToken refreshTokenEntity = refreshTokenService.createRefreshToken(user);
+            String refreshToken = jwtService.generateRefreshToken(userDetails, refreshTokenEntity.getTokenId());
+
+            // Redirigir con ambos tokens
+            response.sendRedirect(redirectUri + "?accessToken=" + accessToken + "&refreshToken=" + refreshToken);
         } catch (Exception e) {
             response.sendRedirect(redirectUri + "?error=token_generation_failed");
-            return;
         }
-
-        response.sendRedirect(redirectUri + "?token=" + token);
     }
 }

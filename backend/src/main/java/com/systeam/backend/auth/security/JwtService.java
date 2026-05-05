@@ -10,6 +10,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +35,9 @@ public class JwtService {
     @Value("${app.security.jwt.expiration-ms}")
     private long expirationMs;
 
+    @Value("${app.security.jwt.refresh-expiration-ms:604800000}")
+    private long refreshExpirationMs;
+
     // Generate JWT token con extra claims
     public String generateToken(UserDetails userDetails, Map<String, Object> extraClaims) throws InvalidKeyException, Exception {
         //Tomo la fecha de ahora y pongo la expiración
@@ -42,42 +46,81 @@ public class JwtService {
 
         //Creo el token
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(now)
                 .expiration(expiration)
-                .signWith(getSigningKey()
-            , SignatureAlgorithm.RS256)
-            .compact();
+                .signWith(getSigningKey(), SignatureAlgorithm.RS256)
+                .compact();
     }
 
-    //Extrae el username basandose en un token
+    // Generar Refresh Token (misma estructura pero mas largo y con tipo)
+    public String generateRefreshToken(UserDetails userDetails, String tokenId) throws InvalidKeyException, Exception {
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + refreshExpirationMs);
+
+        return Jwts.builder()
+                .id(tokenId) // El mismo token ID que guardamos en BD
+                .subject(userDetails.getUsername())
+                .issuedAt(now)
+                .expiration(expiration)
+                .claim("type", "refresh") // <-- Diferenciamos el tipo como Refresh
+                .signWith(getSigningKey(), SignatureAlgorithm.RS256)
+                .compact();
+    }
+
+    // Extraer el jti (JWT ID) del token
+    public String extractTokenId(String token) throws JwtException, Exception {
+        return extractClaims(token, Claims::getId);
+    }
+
+    // Verificar el Refresh Token
+    public boolean isRefreshToken(String token) throws Exception {
+        try {
+            Claims claims = extractAllClaims(token);
+            String type = (String) claims.get("type");
+            return "refresh".equals(type);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Actualizar getExpirationMs() para que devuelva ambos
+    public long getRefreshExpirationMs() {
+        return refreshExpirationMs;
+    }
+
+    // Extrae el username basandose en un token
     public String extractUsername(String token) throws JwtException, IllegalArgumentException, Exception {
         return extractClaims(token, Claims::getSubject);
     }
 
-    //Compara el username del token con el username del UserDetails y si el token ha expirado
-    public boolean isTokenValid(String token, UserDetails userDetails) throws JwtException, IllegalArgumentException, Exception {
+    // Compara el username del token con el username del UserDetails y si el token
+    // ha expirado
+    public boolean isTokenValid(String token, UserDetails userDetails)
+            throws JwtException, IllegalArgumentException, Exception {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
-    //Comprueba si el token ha expirado
+    // Comprueba si el token ha expirado
     private boolean isTokenExpired(String token) throws JwtException, IllegalArgumentException, Exception {
         return extractAllClaims(token).getExpiration().before(new Date());
     }
 
-    public <T> T extractClaims(String token, Function<Claims, T> claimsResolver) throws JwtException, IllegalArgumentException, Exception{
+    public <T> T extractClaims(String token, Function<Claims, T> claimsResolver)
+            throws JwtException, IllegalArgumentException, Exception {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
-    
+
     // Extracts all claims (payload data) from the JWT token:
     // - subject (username)
     // - issuedAt (creation timestamp)
     // - expiration (expiry timestamp)
     // - any custom extra claims (roles, permissions, etc.)
-      private Claims extractAllClaims(String token) throws JwtException, IllegalArgumentException, Exception {
+    private Claims extractAllClaims(String token) throws JwtException, IllegalArgumentException, Exception {
         return Jwts.parser()
                 .verifyWith(getVerificationKey())
                 .build()
@@ -85,7 +128,8 @@ public class JwtService {
                 .getPayload();
     }
 
-    // Retorna la clave privada para firmar (admite DER base64, PEM y PEM codificado en base64)
+    // Retorna la clave privada para firmar (admite DER base64, PEM y PEM codificado
+    // en base64)
     private PrivateKey getSigningKey() throws Exception {
         byte[] keyBytes = decodeKeyMaterial(privateKeyBase64);
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
@@ -134,7 +178,7 @@ public class JwtService {
         return Base64.getDecoder().decode(cleanPem);
     }
 
-    //Retorna la expiración en milisegundos
+    // Retorna la expiración en milisegundos
     public long getExpirationMs() {
         return expirationMs;
     }
