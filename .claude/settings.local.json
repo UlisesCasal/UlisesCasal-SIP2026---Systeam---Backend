@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -X POST http://localhost:8080/auth/register -H 'Content-Type: application/json' -d '{\"name\":\"Test User\",\"email\":\"testuser@systeam.com\",\"password\":\"Test1234\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:8080/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"testuser@systeam.com\",\"password\":\"Test1234\"}')"
+    ]
+  }
+}

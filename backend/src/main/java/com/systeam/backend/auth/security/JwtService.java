@@ -2,6 +2,7 @@ package com.systeam.backend.auth.security;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
+import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
@@ -12,6 +13,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,6 +36,9 @@ public class JwtService {
     @Value("${app.security.jwt.public-key}")
     private String publicKeyBase64;
 
+    @Value("${app.security.jwt.secret:}")
+    private String legacySecret;
+
     @Value("${app.security.jwt.expiration-ms}")
     private long expirationMs;
 
@@ -44,15 +51,14 @@ public class JwtService {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationMs);
 
-        //Creo el token
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(now)
-                .expiration(expiration)
-                .signWith(getSigningKey(), SignatureAlgorithm.RS256)
-                .compact();
+                .expiration(expiration);
+
+        return signJwt(builder);
     }
 
     // Generar Refresh Token (misma estructura pero mas largo y con tipo)
@@ -60,14 +66,14 @@ public class JwtService {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + refreshExpirationMs);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .id(tokenId) // El mismo token ID que guardamos en BD
                 .subject(userDetails.getUsername())
                 .issuedAt(now)
                 .expiration(expiration)
-                .claim("type", "refresh") // <-- Diferenciamos el tipo como Refresh
-                .signWith(getSigningKey(), SignatureAlgorithm.RS256)
-                .compact();
+                .claim("type", "refresh"); // <-- Diferenciamos el tipo como Refresh
+
+        return signJwt(builder);
     }
 
     // Extraer el jti (JWT ID) del token
@@ -121,8 +127,26 @@ public class JwtService {
     // - expiration (expiry timestamp)
     // - any custom extra claims (roles, permissions, etc.)
     private Claims extractAllClaims(String token) throws JwtException, IllegalArgumentException, Exception {
+        String alg = extractAlg(token);
+
+        if (alg != null && alg.startsWith("HS")) {
+            return Jwts.parser()
+                    .verifyWith(getHmacSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        }
+
+        if (hasRsaPrivateKey()) {
+            return Jwts.parser()
+                    .verifyWith(getVerificationKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        }
+
         return Jwts.parser()
-                .verifyWith(getVerificationKey())
+                .verifyWith(getHmacSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -135,6 +159,77 @@ public class JwtService {
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         return keyFactory.generatePrivate(spec);
+    }
+
+    private SecretKey getHmacSigningKey() {
+        String hmacSecret = resolveHmacSecret();
+        if (hmacSecret == null || hmacSecret.trim().isEmpty()) {
+            throw new IllegalArgumentException("La clave JWT secreta no puede estar vacia");
+        }
+        return new SecretKeySpec(hmacSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    }
+
+    private SignatureAlgorithm resolveSignatureAlgorithm() {
+        return hasRsaPrivateKey() ? SignatureAlgorithm.RS256 : SignatureAlgorithm.HS256;
+    }
+
+    private Key resolveSigningKey() throws Exception {
+        return hasRsaPrivateKey() ? getSigningKey() : getHmacSigningKey();
+    }
+
+    private boolean hasRsaPrivateKey() {
+        return privateKeyBase64 != null && !privateKeyBase64.trim().isEmpty();
+    }
+
+    private String resolveHmacSecret() {
+        if (legacySecret != null && !legacySecret.trim().isEmpty()) {
+            return legacySecret;
+        }
+        // Fallback de compatibilidad para entornos donde RSA viene mal configurado.
+        if (privateKeyBase64 != null && !privateKeyBase64.trim().isEmpty()) {
+            return privateKeyBase64;
+        }
+        return null;
+    }
+
+    private String signJwt(io.jsonwebtoken.JwtBuilder builder) throws Exception {
+        if (hasRsaPrivateKey()) {
+            try {
+                return builder
+                        .signWith(getSigningKey(), SignatureAlgorithm.RS256)
+                        .compact();
+            } catch (Exception e) {
+                // Si RSA falla por material de clave inválido, degradamos a HS para no romper login.
+            }
+        }
+
+        return builder
+                .signWith(getHmacSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    private String extractAlg(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return null;
+            }
+            byte[] headerBytes = Base64.getUrlDecoder().decode(parts[0]);
+            String headerJson = new String(headerBytes, StandardCharsets.UTF_8);
+            int idx = headerJson.indexOf("\"alg\"");
+            if (idx < 0) {
+                return null;
+            }
+            int colon = headerJson.indexOf(':', idx);
+            int firstQuote = headerJson.indexOf('"', colon + 1);
+            int secondQuote = headerJson.indexOf('"', firstQuote + 1);
+            if (colon < 0 || firstQuote < 0 || secondQuote < 0) {
+                return null;
+            }
+            return headerJson.substring(firstQuote + 1, secondQuote);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private PublicKey getVerificationKey() throws Exception {

@@ -53,6 +53,7 @@ public class UserService {
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .provider("local")
                 .enabled(true)
                 .roles(new HashSet<>(Set.of(defaultRole)))
                 .build();
