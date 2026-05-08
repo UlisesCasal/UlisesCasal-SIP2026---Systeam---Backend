@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.systeam.backend.UserAdministration.model.User;
+import com.systeam.shared.model.Usuario;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
 import com.systeam.backend.auth.model.RefreshToken;
 import com.systeam.backend.auth.repository.RefreshTokenRepository;
@@ -38,7 +38,7 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public RefreshToken createRefreshToken(User user) {
+    public RefreshToken createRefreshToken(Usuario user) {
         refreshTokenRepository.deleteByUser(user);
 
         RefreshToken refreshToken = new RefreshToken();
@@ -68,7 +68,7 @@ public class RefreshTokenService {
             throw new ValidationException("Refresh token expirado");
         }
 
-        User user = refreshToken.getUser();
+        Usuario user = refreshToken.getUser();
         var userDetails = userDetailsService.loadUserByUsername(user.getEmail());
 
         refreshToken.setRevoked(true);

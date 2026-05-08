@@ -11,7 +11,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.systeam.backend.UserAdministration.model.User;
+import com.systeam.shared.model.Usuario;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) {
         //Busca el usuario por email
-        User user = userRepository.findByEmail(email)
+        Usuario user = userRepository.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         //Verifica si el usuario está habilitado

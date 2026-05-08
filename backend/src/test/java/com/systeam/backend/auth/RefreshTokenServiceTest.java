@@ -1,6 +1,6 @@
 package com.systeam.backend.auth;
 
-import com.systeam.backend.UserAdministration.model.User;
+import com.systeam.shared.model.Usuario;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
 import com.systeam.backend.auth.model.RefreshToken;
 import com.systeam.backend.auth.repository.RefreshTokenRepository;
@@ -26,7 +26,7 @@ class RefreshTokenServiceTest {
     private CustomUserDetailsService userDetailsService;
     private com.systeam.backend.auth.service.RefreshTokenService refreshTokenService;
 
-    private User testUser;
+    private Usuario testUser;
     private String validTokenId = "test-token-id-123";
 
     @BeforeEach
@@ -41,7 +41,7 @@ class RefreshTokenServiceTest {
                 refreshTokenRepository, jwtService, userRepository, userDetailsService
         );
 
-        testUser = new User();
+        testUser = new Usuario();
         testUser.setId(1L);
         testUser.setEmail("test@systeam.com");
 

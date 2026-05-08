@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import com.systeam.backend.UserAdministration.dto.CreatePermissionRequest;
 import com.systeam.backend.UserAdministration.dto.PermissionResponse;
 import com.systeam.backend.UserAdministration.dto.UpdatePermissionRequest;
-import com.systeam.backend.UserAdministration.model.Permission;
+import com.systeam.shared.model.Permiso;
 import com.systeam.backend.UserAdministration.repository.PermissionRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -17,14 +17,14 @@ import lombok.RequiredArgsConstructor;
 public class PermissionService {
     //Link con la tabla
     private final PermissionRepository permissionRepository;
-    
+
     //EVENTO: CREAR UN PERMISO
     public PermissionResponse create(CreatePermissionRequest request) {
         if (permissionRepository.existsByName(request.getName())) {
             throw new RuntimeException("Ya existe un permiso con ese nombre");
         }
 
-        Permission permission = Permission.builder()
+        Permiso permission = Permiso.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .build();
@@ -42,7 +42,7 @@ public class PermissionService {
 
     //EVENTO: ACTUALIZAR PERMISO POR ID
     public PermissionResponse update(Long id, UpdatePermissionRequest request) {
-        Permission permission = getPermission(id);
+        Permiso permission = getPermission(id);
         permission.setName(request.getName());
         permission.setDescription(request.getDescription());
         return toResponse(permissionRepository.save(permission));
@@ -53,13 +53,13 @@ public class PermissionService {
         permissionRepository.delete(getPermission(id));
     }
 
-    //EVENTO: OBTENER PERMISO 
-    private Permission getPermission(Long id) {
+    //EVENTO: OBTENER PERMISO
+    private Permiso getPermission(Long id) {
         return permissionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Permiso no encontrado"));
     }
-    
-    private PermissionResponse toResponse(Permission permission) {
+
+    private PermissionResponse toResponse(Permiso permission) {
         return PermissionResponse.builder()
                 .id(permission.getId())
                 .name(permission.getName())

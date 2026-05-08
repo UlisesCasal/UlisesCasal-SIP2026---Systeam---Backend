@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.systeam.backend.UserAdministration.dto.CreateUserRequest;
 import com.systeam.backend.UserAdministration.dto.UserResponse;
-import com.systeam.backend.UserAdministration.model.User;
+import com.systeam.shared.model.Usuario;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
 import com.systeam.backend.UserAdministration.service.UserService;
 import com.systeam.backend.auth.dto.LoginRequest;
@@ -60,7 +60,7 @@ public class AuthService {
         //Obtengo los detalles del usuario
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(request.getEmail());
         //Obtengo el usuario de la tbla de usuarios
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+        Usuario user = userRepository.findByEmail(request.getEmail()).orElseThrow();
 
         //Obtengo los roles y permisos del usuario obtenidos de la tabla de roles y permisos de usuarios
         Set<String> roles = user.getRoles().stream()

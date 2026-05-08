@@ -9,8 +9,8 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import com.systeam.backend.UserAdministration.model.Role;
-import com.systeam.backend.UserAdministration.model.User;
+import com.systeam.shared.model.Rol;
+import com.systeam.shared.model.Usuario;
 import com.systeam.backend.UserAdministration.repository.RoleRepository;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
 
@@ -33,11 +33,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String provider = userRequest.getClientRegistration().getRegistrationId();
 
         // Buscar usuario existente o crear nuevo
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
-            Role defaultRole = roleRepository.findByName("INVESTOR")
+        Usuario user = userRepository.findByEmail(email).orElseGet(() -> {
+            Rol defaultRole = roleRepository.findByName("INVESTOR")
                 .orElseThrow(() -> new RuntimeException("Rol INVESTOR no encontrado"));
 
-            User newUser = User.builder()
+            Usuario newUser = Usuario.builder()
                 .name(name != null ? name : email)
                 .email(email)
                 .password(null)

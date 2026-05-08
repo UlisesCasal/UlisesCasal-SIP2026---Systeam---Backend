@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import jakarta.persistence.*;
 
-import com.systeam.backend.UserAdministration.model.User;
+import com.systeam.shared.model.Usuario;
 
 @Entity
 @Table(name = "refresh_tokens")
@@ -20,7 +20,7 @@ public class RefreshToken {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Usuario user;
 
     @Column(nullable = false)
     private Instant expiryDate;
@@ -39,8 +39,8 @@ public class RefreshToken {
     public String getTokenId() { return tokenId; }
     public void setTokenId(String tokenId) { this.tokenId = tokenId; }
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public Usuario getUser() { return user; }
+    public void setUser(Usuario user) { this.user = user; }
 
     public Instant getExpiryDate() { return expiryDate; }
     public void setExpiryDate(Instant expiryDate) { this.expiryDate = expiryDate; }

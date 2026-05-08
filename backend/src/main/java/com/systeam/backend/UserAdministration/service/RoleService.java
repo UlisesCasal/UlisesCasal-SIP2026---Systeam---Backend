@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import com.systeam.backend.UserAdministration.dto.CreateRoleRequest;
 import com.systeam.backend.UserAdministration.dto.RoleResponse;
 import com.systeam.backend.UserAdministration.dto.UpdateRoleRequest;
-import com.systeam.backend.UserAdministration.model.Permission;
-import com.systeam.backend.UserAdministration.model.Role;
+import com.systeam.shared.model.Permiso;
+import com.systeam.shared.model.Rol;
 import com.systeam.backend.UserAdministration.repository.PermissionRepository;
 import com.systeam.backend.UserAdministration.repository.RoleRepository;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
@@ -28,7 +28,7 @@ public class RoleService {
             throw new RuntimeException("Ya existe un rol con ese nombre");
         }
         //Se crea el rol (se inicializa permissions para evitar null)
-        Role role = Role.builder()
+        Rol role = Rol.builder()
             .name(request.getName())
             .description(request.getDescription())
             .permissions(new java.util.HashSet<>())
@@ -46,7 +46,7 @@ public class RoleService {
     }
     //Actualiza un rol
     public RoleResponse update(Long id, UpdateRoleRequest request) {
-        Role role = getRole(id);
+        Rol role = getRole(id);
         role.setName(request.getName());
         role.setDescription(request.getDescription());
         return toResponse(roleRepository.save(role));
@@ -59,12 +59,12 @@ public class RoleService {
         roleRepository.delete(getRole(id));
     }
     //Obtiene un rol en base a un ID
-    private Role getRole(Long id) {
+    private Rol getRole(Long id) {
         return roleRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
     }
     //Mapea el role a la estructura de respuesta
-    private RoleResponse toResponse(Role role) {
+    private RoleResponse toResponse(Rol role) {
         return RoleResponse.builder()
             .id(role.getId())
             .name(role.getName())
@@ -78,8 +78,8 @@ public class RoleService {
     //=======================PERMISOS===========================
 
     public RoleResponse assignPermission(Long roleId, Long permissionId) {
-        Role role = getRole(roleId);
-        Permission permission = permissionRepository.findById(permissionId)
+        Rol role = getRole(roleId);
+        Permiso permission = permissionRepository.findById(permissionId)
             .orElseThrow(() -> new RuntimeException("Permiso no encontrado"));
 
         role.getPermissions().add(permission);
@@ -87,7 +87,7 @@ public class RoleService {
     }
 
     public RoleResponse revokePermission(Long roleId, Long permissionId) {
-        Role role = getRole(roleId);
+        Rol role = getRole(roleId);
         role.getPermissions().removeIf(permission -> permission.getId().equals(permissionId));
         return toResponse(roleRepository.save(role));
     }

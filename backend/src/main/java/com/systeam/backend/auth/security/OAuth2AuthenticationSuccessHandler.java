@@ -15,7 +15,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import com.systeam.backend.UserAdministration.model.User;
+import com.systeam.shared.model.Usuario;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
 import com.systeam.backend.auth.model.RefreshToken;
 import com.systeam.backend.auth.service.RefreshTokenService;
@@ -40,7 +40,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
         String email = oauth2User.getAttribute("email");
 
-        User user = userRepository.findByEmail(email)
+        Usuario user = userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("Usuario OAuth2 no encontrado"));
 
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);

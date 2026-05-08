@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 import com.systeam.backend.UserAdministration.dto.CreateUserRequest;
 import com.systeam.backend.UserAdministration.dto.UpdateUserRequest;
 import com.systeam.backend.UserAdministration.dto.UserResponse;
-import com.systeam.backend.UserAdministration.model.Role;
-import com.systeam.backend.UserAdministration.model.User;
+import com.systeam.shared.model.Rol;
+import com.systeam.shared.model.Usuario;
 import com.systeam.backend.UserAdministration.repository.RoleRepository;
 import com.systeam.backend.UserAdministration.repository.UserRepository;
 
@@ -44,12 +44,12 @@ public class UserService {
 
         // Le asignamos el Rol por defecto: INVESTOR
         // Busco el rol INVESTOR en la tabla de roles, sino ERROR.
-        Role defaultRole = roleRepository.findByName("INVESTOR")
+        Rol defaultRole = roleRepository.findByName("INVESTOR")
                 .orElseThrow(() -> new RuntimeException("Rol INVESTOR no encontrado"));
 
         // Armo el usuario con password encoded, y con los datos recibidos y role por
         // defecto INVESTOR
-        User user = User.builder()
+        Usuario user = Usuario.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -74,7 +74,7 @@ public class UserService {
 
     // EVENTO: Obtener usuario por email
     public UserResponse getCurrentUser(String email) {
-        User user = userRepository.findByEmail(email)
+        Usuario user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         return toResponse(user);
     }
@@ -82,7 +82,7 @@ public class UserService {
     // EVENTO: Actualizar un usuario
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
         // Actualiza usuario por ID
-        User user = findUserOrThrow(id);
+        Usuario user = findUserOrThrow(id);
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         return toResponse(userRepository.save(user));
@@ -90,7 +90,7 @@ public class UserService {
 
     // EVENTO: Deshabilitar un usuario
     public void disableUser(Long id) {
-        User user = findUserOrThrow(id);
+        Usuario user = findUserOrThrow(id);
         user.setEnabled(false);
         userRepository.save(user);
     }
@@ -98,7 +98,7 @@ public class UserService {
     // EVENTO: Cambio de contraseña:
     public void changePassword(String email, String currentPassword, String newPassword) {
         //Obtiene el usuario
-        User user = userRepository.findByEmail(email)
+        Usuario user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         //Comprueba si la contraseña actual es correcta, sino se lo devuelve
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
@@ -111,20 +111,20 @@ public class UserService {
 
     // --- helpers ---
     // Buscar un usuario por ID, sino ERROR
-    private User findUserOrThrow(Long id) {
+    private Usuario findUserOrThrow(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
     // Convertir un usuario a una respuesta para ser leida por el cliente
-    private UserResponse toResponse(User user) {
+    private UserResponse toResponse(Usuario user) {
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
                 .enabled(user.getEnabled())
                 .roles(user.getRoles().stream()
-                        .map(Role::getName)
+                        .map(Rol::getName)
                         .collect(Collectors.toSet()))
                 .createdAt(user.getCreatedAt())
                 .build();
@@ -132,8 +132,8 @@ public class UserService {
 
     //Asignar rol a usuario
     public UserResponse assignRole(Long userId, Long roleId) {
-        User user = findUserOrThrow(userId);
-        Role role = roleRepository.findById(roleId)
+        Usuario user = findUserOrThrow(userId);
+        Rol role = roleRepository.findById(roleId)
             .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
 
         user.getRoles().add(role);
@@ -141,7 +141,7 @@ public class UserService {
     }
 //Rovar rol de usuario
     public UserResponse revokeRole(Long userId, Long roleId) {
-        User user = findUserOrThrow(userId);
+        Usuario user = findUserOrThrow(userId);
         user.getRoles().removeIf(role -> role.getId().equals(roleId));
         return toResponse(userRepository.save(user));
     }
