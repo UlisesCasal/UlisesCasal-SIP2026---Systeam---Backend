@@ -13,4 +13,6 @@ public class UpdateUserRequest {
     @NotBlank(message = "El email es obligatorio")
     @Email(message = "El email no tiene un formato válido")
     private String email;
+
+    private Boolean enabled;
 }

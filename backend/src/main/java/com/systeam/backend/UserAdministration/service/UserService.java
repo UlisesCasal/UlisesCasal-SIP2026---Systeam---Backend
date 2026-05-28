@@ -84,6 +84,9 @@ public class UserService {
         User user = findUserOrThrow(id);
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        if (request.getEnabled() != null) {
+            user.setEnabled(request.getEnabled());
+        }
         return toResponse(userRepository.save(user));
     }
 
@@ -135,7 +138,11 @@ public class UserService {
         Role role = roleRepository.findById(roleId)
             .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
 
-        user.getRoles().add(role);
+        boolean yaAsignado = user.getRoles().stream()
+            .anyMatch(r -> r.getId().equals(roleId));
+        if (!yaAsignado) {
+            user.getRoles().add(role);
+        }
         return toResponse(userRepository.save(user));
     }
 //Rovar rol de usuario
