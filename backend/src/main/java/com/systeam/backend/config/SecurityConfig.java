@@ -17,6 +17,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.systeam.backend.auth.security.CustomAccessDeniedHandler;
 import com.systeam.backend.auth.security.CustomOAuth2UserService;
@@ -86,7 +88,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
-                .requestMatchers(HttpMethod.GET, "/auth/validate").permitAll()
                 .requestMatchers("/oauth2/**", "/login/oauth2/**", "/login/**").permitAll()
                 .anyRequest().authenticated()
             )

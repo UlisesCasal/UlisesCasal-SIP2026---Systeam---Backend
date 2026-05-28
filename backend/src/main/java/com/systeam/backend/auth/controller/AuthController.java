@@ -1,25 +1,27 @@
 package com.systeam.backend.auth.controller;
 
 import java.security.Principal;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.systeam.backend.UserAdministration.dto.CreateUserRequest;
 import com.systeam.backend.UserAdministration.dto.UserResponse;
+import com.systeam.backend.UserAdministration.repository.UserRepository;
 import com.systeam.backend.UserAdministration.service.UserService;
 import com.systeam.backend.auth.dto.ChangePasswordRequest;
 import com.systeam.backend.auth.dto.LoginRequest;
 import com.systeam.backend.auth.dto.LoginResponse;
-import com.systeam.backend.auth.dto.ValidateResponse;
-import com.systeam.backend.auth.security.JwtService;
+import com.systeam.backend.auth.dto.RefreshRequest;
+import com.systeam.backend.auth.dto.TokenValidationResponse;
 import com.systeam.backend.auth.service.AuthService;
+import com.systeam.backend.auth.service.RefreshTokenService;
 
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.security.InvalidKeyException;
 import jakarta.validation.Valid;
 
@@ -32,12 +34,16 @@ import jakarta.validation.Valid;
 public class AuthController {
     private final AuthService authService;
     private final UserService userService;
-    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
+    private final UserRepository userRepository;
 
-    public AuthController(AuthService authService, UserService userService, JwtService jwtService) {
+    public AuthController(AuthService authService, UserService userService,
+                          RefreshTokenService refreshTokenService,
+                          UserRepository userRepository) {
         this.authService = authService;
         this.userService = userService;
-        this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/login")
@@ -61,15 +67,34 @@ public class AuthController {
                 request.getNewPassword());
     }
 
+    // ENDPOINT PARA REFRESCAR TOKENS
+    @PostMapping("/refresh")
+    public LoginResponse refreshToken(@RequestBody @Valid RefreshRequest request) throws Exception {
+        return refreshTokenService.refreshTokenPair(request.getRefreshToken());
+    }
+
+    // ENDPOINT PARA QUE OTROS MICROSERVICIOS VALIDEN UN TOKEN
+    // Si el request llega acá, el JwtAuthenticationFilter ya validó la firma y expiración.
+    // Solo retornamos los datos del usuario que están en el SecurityContext.
     @GetMapping("/validate")
-    public ValidateResponse validate(@RequestHeader("Authorization") String authHeader) throws Exception {
-        String token = authHeader.replace("Bearer ", "");
-        Long userId = jwtService.extractClaims(token, claims -> claims.get("userId", Long.class));
-        String email = jwtService.extractClaims(token, Claims::getSubject);
-        List<String> rolesList = jwtService.extractClaims(token, claims -> claims.get("roles", List.class));
-        List<String> permissionsList = jwtService.extractClaims(token, claims -> claims.get("permissions", List.class));
-        Set<String> roles = rolesList != null ? new HashSet<>(rolesList) : new HashSet<>();
-        Set<String> permissions = permissionsList != null ? new HashSet<>(permissionsList) : new HashSet<>();
-        return new ValidateResponse(userId, email, roles, permissions);
+    public TokenValidationResponse validateToken(Principal principal) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        Set<String> roles = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring(5))
+                .collect(Collectors.toSet());
+
+        Set<String> permissions = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(a -> !a.startsWith("ROLE_"))
+                .collect(Collectors.toSet());
+
+        Long userId = userRepository.findByEmail(principal.getName())
+                .map(u -> u.getId())
+                .orElseThrow();
+
+        return new TokenValidationResponse(userId, principal.getName(), roles, permissions);
     }
 }

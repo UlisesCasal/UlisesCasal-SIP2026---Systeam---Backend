@@ -4,9 +4,9 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.systeam.backend.UserAdministration.model.Permission;
+import com.systeam.shared.model.Permiso;
 
-public interface PermissionRepository extends JpaRepository<Permission, Long> {
-    Optional<Permission> findByName(String name);
+public interface PermissionRepository extends JpaRepository<Permiso, Long> {
+    Optional<Permiso> findByName(String name);
     boolean existsByName(String name);
 }
