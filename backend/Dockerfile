@@ -1,11 +1,11 @@
 FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
-ARG GITHUB_USERNAME
-ARG GITHUB_TOKEN
+ARG GH_USERNAME
+ARG GH_TOKEN
 
 # Crear settings.xml con credenciales de GitHub Packages
-RUN mkdir -p /root/.m2 && printf '<settings>\n  <servers>\n    <server>\n      <id>github</id>\n      <username>%s</username>\n      <password>%s</password>\n    </server>\n  </servers>\n</settings>\n' "$GITHUB_USERNAME" "$GITHUB_TOKEN" > /root/.m2/settings.xml
+RUN mkdir -p /root/.m2 && printf '<settings>\n  <servers>\n    <server>\n      <id>github</id>\n      <username>%s</username>\n      <password>%s</password>\n    </server>\n  </servers>\n</settings>\n' "$GH_USERNAME" "$GH_TOKEN" > /root/.m2/settings.xml
 
 COPY pom.xml ./
 COPY .mvn .mvn
