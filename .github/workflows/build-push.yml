@@ -41,8 +41,8 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build \
-            --build-arg GITHUB_USERNAME=${{ secrets.GH_USERNAME }} \
-            --build-arg GITHUB_TOKEN=${{ secrets.GH_PAT }} \
+            --build-arg GH_USERNAME=${{ secrets.GH_USERNAME }} \
+            --build-arg GH_TOKEN=${{ secrets.GH_TOKEN }} \
             -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
             -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest \
             .

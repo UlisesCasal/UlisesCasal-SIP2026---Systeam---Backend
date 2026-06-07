@@ -2,8 +2,8 @@
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
-ARG GITHUB_USERNAME
-ARG GITHUB_TOKEN
+ARG GH_USERNAME
+ARG GH_TOKEN
 
 COPY backend/pom.xml ./
 COPY backend/.mvn .mvn
@@ -12,7 +12,7 @@ COPY backend/src src
 
 RUN mkdir -p /root/.m2 && \
     printf '<settings><servers><server><id>github</id><username>%s</username><password>%s</password></server></servers></settings>' \
-    "${GITHUB_USERNAME}" "${GITHUB_TOKEN}" > /root/.m2/settings.xml
+    "${GH_USERNAME}" "${GH_TOKEN}" > /root/.m2/settings.xml
 
 RUN chmod +x mvnw && ./mvnw -q -DskipTests package
 
