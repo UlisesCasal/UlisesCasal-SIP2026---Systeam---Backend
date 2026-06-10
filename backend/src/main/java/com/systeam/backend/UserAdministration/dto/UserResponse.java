@@ -1,6 +1,8 @@
 package com.systeam.backend.UserAdministration.dto;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.Set;
 
 import lombok.Builder;
@@ -15,4 +17,8 @@ public class UserResponse {
     private Boolean enabled;
     private Set<String> roles;
     private LocalDateTime createdAt;
+    private LocalDate fechaNacimiento;
+    private BigDecimal saldoIdea;
+    private BigDecimal saldoUsdt;
+    private LocalDateTime deletedAt;
 }

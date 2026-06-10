@@ -53,6 +53,7 @@ public class UserService {
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .fechaNacimiento(request.getFechaNacimiento())
                 .provider("local")
                 .enabled(true)
                 .roles(new HashSet<>(Set.of(defaultRole)))
@@ -63,7 +64,11 @@ public class UserService {
     }
 
     // EVENTO: Obtener todos los usuarios
-    public Page<UserResponse> getAllUsers(Pageable pageable) {
+    public Page<UserResponse> getAllUsers(String search, Pageable pageable) {
+        if (search != null && !search.trim().isEmpty()) {
+            return userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, pageable)
+                    .map(this::toResponse);
+        }
         return userRepository.findAll(pageable).map(this::toResponse);
     }
 
@@ -87,6 +92,9 @@ public class UserService {
         user.setEmail(request.getEmail());
         if (request.getEnabled() != null) {
             user.setEnabled(request.getEnabled());
+        }
+        if (request.getFechaNacimiento() != null) {
+            user.setFechaNacimiento(request.getFechaNacimiento());
         }
         return toResponse(userRepository.save(user));
     }
@@ -130,6 +138,10 @@ public class UserService {
                         .map(Rol::getName)
                         .collect(Collectors.toSet()))
                 .createdAt(user.getCreatedAt())
+                .fechaNacimiento(user.getFechaNacimiento())
+                .saldoIdea(user.getSaldoIdea())
+                .saldoUsdt(user.getSaldoUsdt())
+                .deletedAt(user.getDeletedAt())
                 .build();
     }
 

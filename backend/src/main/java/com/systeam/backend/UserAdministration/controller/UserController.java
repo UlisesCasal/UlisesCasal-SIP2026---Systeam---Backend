@@ -4,6 +4,7 @@ import java.security.Principal;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,9 +54,16 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasAuthority('user:read')")
     public Page<UserResponse> getAllUsers(
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return userService.getAllUsers(PageRequest.of(page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+        
+        String[] sortParams = sort.split(",");
+        Sort.Direction direction = Sort.Direction.fromString(sortParams.length > 1 ? sortParams[1] : "desc");
+        String property = sortParams[0];
+
+        return userService.getAllUsers(search, PageRequest.of(page, size, Sort.by(direction, property)));
     }
 
     // EVENTO: Obtener un usuario por ID. Si el cliente pega un GET con ID
