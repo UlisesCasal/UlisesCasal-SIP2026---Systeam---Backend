@@ -25,6 +25,7 @@ import com.systeam.backend.auth.security.CustomOAuth2UserService;
 import com.systeam.backend.auth.security.JwtAuthenticationEntryPoint;
 import com.systeam.backend.auth.security.JwtAuthenticationFilter;
 import com.systeam.backend.auth.security.OAuth2AuthenticationSuccessHandler;
+import com.systeam.backend.auth.security.HttpCookieOAuth2AuthorizationRequestRepository;
 
 @Configuration
 @EnableMethodSecurity
@@ -35,17 +36,21 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
 
+    private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
+
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             JwtAuthenticationEntryPoint authenticationEntryPoint,
             CustomAccessDeniedHandler accessDeniedHandler,
             CustomOAuth2UserService customOAuth2UserService,
-            OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
+            OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler,
+            HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
         this.customOAuth2UserService = customOAuth2UserService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.cookieAuthorizationRequestRepository = cookieAuthorizationRequestRepository;
     }
 
     @Bean
@@ -92,6 +97,9 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorizationEndpoint -> authorizationEndpoint
+                    .authorizationRequestRepository(cookieAuthorizationRequestRepository)
+                )
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService)
                 )
