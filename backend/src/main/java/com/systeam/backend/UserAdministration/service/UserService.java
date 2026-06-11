@@ -20,6 +20,7 @@ import com.systeam.backend.UserAdministration.repository.UserRepository;
 
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 public class UserService {
     // Conexion con tabla de usuario
     private final UserRepository userRepository;
