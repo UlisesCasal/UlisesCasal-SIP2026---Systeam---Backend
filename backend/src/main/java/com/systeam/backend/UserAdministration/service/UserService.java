@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.systeam.backend.UserAdministration.dto.CreateUserRequest;
 import com.systeam.backend.UserAdministration.dto.UpdateUserRequest;
 import com.systeam.backend.UserAdministration.dto.UserResponse;
+import com.systeam.shared.model.Permiso;
 import com.systeam.shared.model.Rol;
 import com.systeam.shared.model.Usuario;
 import com.systeam.backend.UserAdministration.repository.RoleRepository;
@@ -137,6 +138,10 @@ public class UserService {
                 .enabled(user.getEnabled())
                 .roles(user.getRoles().stream()
                         .map(Rol::getName)
+                        .collect(Collectors.toSet()))
+                .permissions(user.getRoles().stream()
+                        .flatMap(r -> r.getPermissions().stream())
+                        .map(Permiso::getName)
                         .collect(Collectors.toSet()))
                 .createdAt(user.getCreatedAt())
                 .fechaNacimiento(user.getFechaNacimiento())

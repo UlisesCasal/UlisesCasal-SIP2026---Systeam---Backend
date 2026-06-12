@@ -16,6 +16,7 @@ public class UserResponse {
     private String email;
     private Boolean enabled;
     private Set<String> roles;
+    private Set<String> permissions;
     private LocalDateTime createdAt;
     private LocalDate fechaNacimiento;
     private BigDecimal saldoIdea;
