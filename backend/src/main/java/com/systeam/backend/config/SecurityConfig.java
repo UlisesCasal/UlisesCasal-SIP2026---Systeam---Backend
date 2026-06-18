@@ -61,7 +61,8 @@ public class SecurityConfig {
             "http://localhost:3000",
             "http://localhost:5173",
             "https://sip-2026-systeam-frontend.vercel.app",
-            "https://*.vercel.app"
+            "https://*.vercel.app",
+            "https://ideafy.lat"
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"));

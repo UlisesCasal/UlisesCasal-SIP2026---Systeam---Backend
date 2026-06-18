@@ -39,10 +39,13 @@ jobs:
           password: ${{ steps.auth.outputs.access_token }}
 
       - name: Build Docker Image
+        env:
+          GH_USERNAME_SECRET: ${{ secrets.GH_USERNAME }}
+          GH_TOKEN_SECRET: ${{ secrets.GH_TOKEN }}
         run: |
-          docker build \
-            --build-arg GH_USERNAME=${{ secrets.GH_USERNAME }} \
-            --build-arg GH_TOKEN=${{ secrets.GH_TOKEN }} \
+          DOCKER_BUILDKIT=1 docker build \
+            --secret id=GH_USERNAME,env=GH_USERNAME_SECRET \
+            --secret id=GH_TOKEN,env=GH_TOKEN_SECRET \
             -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
             -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest \
             .

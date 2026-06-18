@@ -2,17 +2,16 @@
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
-ARG GH_USERNAME
-ARG GH_TOKEN
-
 COPY backend/pom.xml ./
 COPY backend/.mvn .mvn
 COPY backend/mvnw mvnw
 COPY backend/src src
 
-RUN mkdir -p /root/.m2 && \
+RUN --mount=type=secret,id=GH_USERNAME \
+    --mount=type=secret,id=GH_TOKEN \
+    mkdir -p /root/.m2 && \
     printf '<settings><servers><server><id>github</id><username>%s</username><password>%s</password></server></servers></settings>' \
-    "${GH_USERNAME}" "${GH_TOKEN}" > /root/.m2/settings.xml
+    "$(cat /run/secrets/GH_USERNAME)" "$(cat /run/secrets/GH_TOKEN)" > /root/.m2/settings.xml
 
 RUN chmod +x mvnw && ./mvnw -q -DskipTests package
 
