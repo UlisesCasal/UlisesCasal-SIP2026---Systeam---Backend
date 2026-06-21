@@ -73,6 +73,11 @@ public class UserController {
         return userService.getUserById(id);
     }
 
+    @GetMapping("/{id}/profile")
+    public com.systeam.backend.UserAdministration.dto.UserProfileResponse getProfile(@PathVariable Long id) {
+        return userService.getProfile(id);
+    }
+
     // EVENTO: Actualizar un usuario. Si el cliente pega un PUT con ID y request
     // body válido
     @PutMapping("/{id}")

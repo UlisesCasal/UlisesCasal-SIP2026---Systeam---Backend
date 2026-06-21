@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.systeam.backend.UserAdministration.dto.CreateUserRequest;
 import com.systeam.backend.UserAdministration.dto.UpdateUserRequest;
@@ -29,11 +30,16 @@ public class UserService {
     private final RoleRepository roleRepository;
     // Encoder para passwords
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder,
+            JdbcTemplate jdbcTemplate) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     // ===========================EVENTOS=============================
@@ -77,6 +83,22 @@ public class UserService {
     // EVENTO: Obtener un usuario por ID
     public UserResponse getUserById(Long id) {
         return toResponse(findUserOrThrow(id));
+    }
+
+    public com.systeam.backend.UserAdministration.dto.UserProfileResponse getProfile(Long id) {
+        Usuario user = findUserOrThrow(id);
+        String walletAddress = null;
+        try {
+            walletAddress = jdbcTemplate.queryForObject("SELECT wallet_address FROM users WHERE id = ?", String.class, id);
+        } catch (Exception e) {
+            // Ignorar si no hay wallet_address
+        }
+        return com.systeam.backend.UserAdministration.dto.UserProfileResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .walletAddress(walletAddress)
+                .createdAt(user.getCreatedAt())
+                .build();
     }
 
     // EVENTO: Obtener usuario por email
