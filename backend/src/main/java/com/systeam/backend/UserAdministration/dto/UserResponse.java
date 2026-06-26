@@ -22,4 +22,6 @@ public class UserResponse {
     private BigDecimal saldoIdea;
     private BigDecimal saldoUsdt;
     private LocalDateTime deletedAt;
+    private String kycStatus;
+    private String kycProviderId;
 }

@@ -170,6 +170,8 @@ public class UserService {
                 .saldoIdea(user.getSaldoIdea())
                 .saldoUsdt(user.getSaldoUsdt())
                 .deletedAt(user.getDeletedAt())
+                .kycStatus(user.getKycStatus())
+                .kycProviderId(user.getKycProviderId())
                 .build();
     }
 

@@ -15,4 +15,6 @@ public class LoginResponse{
     private String email;
     private Set<String> roles;
     private Set<String> permissions;
+    private String kycStatus;
+    private String kycProviderId;
 }

@@ -93,6 +93,8 @@ public class AuthService {
             .email(user.getEmail())
             .roles(roles)
             .permissions(permissions)
+            .kycStatus(user.getKycStatus())
+            .kycProviderId(user.getKycProviderId())
             .build();
     }
     //Servicio para registrar usuarios, recibe una request de registro
