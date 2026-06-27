@@ -41,7 +41,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             Usuario newUser = Usuario.builder()
                 .name(name != null ? name : email)
                 .email(email)
-                .password(null)
+                .password("") // DB constraints require non-null password
                 .provider(provider)
                 .providerId(providerId)
                 .enabled(true)
