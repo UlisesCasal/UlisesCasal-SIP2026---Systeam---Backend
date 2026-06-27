@@ -18,10 +18,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
-        log.error("Error interno del servidor", ex);
+        log.error("Error en la operacion (RuntimeException)", ex);
+        String msg = (ex.getMessage() != null) ? ex.getMessage() : "Error en la operación";
         return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(Map.of("error", "Error interno del servidor"));
+            .status(HttpStatus.BAD_REQUEST)
+            .body(Map.of("error", msg));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -39,30 +40,34 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
         log.warn("Recurso no encontrado: {}", ex.getMessage());
+        String msg = (ex.getMessage() != null) ? ex.getMessage() : "Recurso no encontrado";
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(Map.of("error", "Recurso no encontrado"));
+            .body(Map.of("error", msg));
     }
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<Map<String, String>> handleConflict(ConflictException ex) {
         log.warn("Conflicto en la operación: {}", ex.getMessage());
+        String msg = (ex.getMessage() != null) ? ex.getMessage() : "Conflicto en la operación";
         return ResponseEntity.status(HttpStatus.CONFLICT)
-            .body(Map.of("error", "Conflicto en la operación"));
+            .body(Map.of("error", msg));
     }
 
-    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
-    public ResponseEntity<Map<String, String>> handleBadCredentials(org.springframework.security.authentication.BadCredentialsException ex) {
-        log.warn("Intento de login fallido: {}", ex.getMessage());
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<Map<String, String>> handleAuthenticationException(org.springframework.security.core.AuthenticationException ex) {
+        log.warn("Error de autenticacion: {}", ex.getMessage());
+        String msg = (ex.getMessage() != null) ? ex.getMessage() : "Credenciales incorrectas";
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-            .body(Map.of("error", "Credenciales incorrectas"));
+            .body(Map.of("error", msg));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleException(Exception ex) {
         log.error("Error no manejado", ex);
+        String msg = (ex.getMessage() != null) ? ex.getMessage() : "Error interno del servidor";
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(Map.of("error", "Error interno del servidor"));
+            .body(Map.of("error", msg));
     }
 
 }

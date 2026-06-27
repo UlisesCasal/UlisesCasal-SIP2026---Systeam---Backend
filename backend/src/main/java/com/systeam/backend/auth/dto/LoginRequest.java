@@ -4,10 +4,10 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 @Data
 public class LoginRequest {
-    @NotBlank
-    @Email
+    @NotBlank(message = "El email es obligatorio para iniciar sesión")
+    @Email(message = "El formato del email no es válido")
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "La contraseña es obligatoria para iniciar sesión")
     private String password;
 }
